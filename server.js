@@ -33,11 +33,28 @@ async function prepareDatabase() {
       PRIMARY KEY (visit_date, visitor_id)
     )
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS daily_pesin_visitors (
+      visit_date DATE NOT NULL,
+      visitor_id UUID NOT NULL,
+      views INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (visit_date, visitor_id)
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS daily_taksitle_visitors (
+      visit_date DATE NOT NULL,
+      visitor_id UUID NOT NULL,
+      views INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (visit_date, visitor_id)
+    )
+  `);
 }
 
 async function recordVisit(visitorId, table = "daily_visitors") {
   if (!pool) return;
-  const safeTable = table === "daily_taksit_visitors" ? "daily_taksit_visitors" : "daily_visitors";
+  const allowedTables = new Set(["daily_visitors", "daily_taksit_visitors", "daily_pesin_visitors", "daily_taksitle_visitors"]);
+  const safeTable = allowedTables.has(table) ? table : "daily_visitors";
   await pool.query(
     `INSERT INTO ${safeTable} (visit_date, visitor_id, views)
      VALUES ((NOW() AT TIME ZONE 'Europe/Istanbul')::date, $1, 1)
@@ -75,7 +92,8 @@ async function sendCounter(res, table = "daily_visitors") {
   }
 
   try {
-    const safeTable = table === "daily_taksit_visitors" ? "daily_taksit_visitors" : "daily_visitors";
+    const allowedTables = new Set(["daily_visitors", "daily_taksit_visitors", "daily_pesin_visitors", "daily_taksitle_visitors"]);
+    const safeTable = allowedTables.has(table) ? table : "daily_visitors";
     const { rows } = await pool.query(`
       WITH days AS (
         SELECT generate_series(
@@ -108,6 +126,14 @@ app.get("/api/taksit-sayac", async (_req, res) => {
   await sendCounter(res, "daily_taksit_visitors");
 });
 
+app.get("/api/pesin-sayac", async (_req, res) => {
+  await sendCounter(res, "daily_pesin_visitors");
+});
+
+app.get("/api/taksitle-sayac", async (_req, res) => {
+  await sendCounter(res, "daily_taksitle_visitors");
+});
+
 app.get("/sayac", (_req, res) => {
   res.sendFile(path.join(root, "sayac.html"));
 });
@@ -134,6 +160,32 @@ app.get("/taksit", async (req, res) => {
 app.get("/taksit/sayac", (_req, res) => {
   res.sendFile(path.join(root, "sayac.html"));
 });
+
+function trackedCatalog(file, table) {
+  return async (req, res) => {
+    let visitorId = req.cookies.hys_visitor;
+    if (!visitorId || !/^[0-9a-f-]{36}$/i.test(visitorId)) {
+      visitorId = crypto.randomUUID();
+      res.cookie("hys_visitor", visitorId, {
+        maxAge: 365 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+    }
+    try {
+      await recordVisit(visitorId, table);
+    } catch (error) {
+      console.error(`${file} ziyareti kaydedilemedi:`, error.message);
+    }
+    res.sendFile(path.join(root, file));
+  };
+}
+
+app.get("/pesin", trackedCatalog("pesin.html", "daily_pesin_visitors"));
+app.get("/pesin/sayac", (_req, res) => res.sendFile(path.join(root, "sayac.html")));
+app.get("/taksitle", trackedCatalog("taksitle.html", "daily_taksitle_visitors"));
+app.get("/taksitle/sayac", (_req, res) => res.sendFile(path.join(root, "sayac.html")));
 
 app.get("/health", (_req, res) => res.send("ok"));
 

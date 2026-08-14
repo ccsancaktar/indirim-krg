@@ -30,9 +30,14 @@
     </main>
     <script>
       const formatter = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
-      const isTaksit = window.location.pathname.startsWith("/taksit/");
-      const endpoint = isTaksit ? "/api/taksit-sayac" : "/api/sayac";
-      if (isTaksit) document.querySelector("#description").textContent = "Taksit kataloğu ziyaret istatistikleri";
+      const section = window.location.pathname.split("/")[1];
+      const settings = {
+        taksit: ["/api/taksit-sayac", "Taksit kataloğu ziyaret istatistikleri"],
+        pesin: ["/api/pesin-sayac", "Peşin kataloğu ziyaret istatistikleri"],
+        taksitle: ["/api/taksitle-sayac", "Taksitle kataloğu ziyaret istatistikleri"],
+      };
+      const [endpoint, description] = settings[section] || ["/api/sayac", "Katalog ziyaret istatistikleri"];
+      document.querySelector("#description").textContent = description;
 
       fetch(endpoint)
         .then((response) => {
