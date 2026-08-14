@@ -22,7 +22,7 @@
   <body>
     <main>
       <h1>Son 7 gün</h1>
-      <p>Katalog ziyaret istatistikleri</p>
+      <p id="description">Katalog ziyaret istatistikleri</p>
       <div class="table" id="table">
         <div class="row head"><span>Tarih</span><span>Toplam giriş</span><span>Tekil ziyaretçi</span></div>
         <div class="row"><span>Yükleniyor…</span></div>
@@ -30,8 +30,11 @@
     </main>
     <script>
       const formatter = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+      const isTaksit = window.location.pathname.startsWith("/taksit/");
+      const endpoint = isTaksit ? "/api/taksit-sayac" : "/api/sayac";
+      if (isTaksit) document.querySelector("#description").textContent = "Taksit kataloğu ziyaret istatistikleri";
 
-      fetch("/api/sayac")
+      fetch(endpoint)
         .then((response) => {
           if (!response.ok) throw new Error("Veriler alınamadı");
           return response.json();
