@@ -94,6 +94,10 @@ app.get("/sayac", (_req, res) => {
   res.sendFile(path.join(root, "sayac.html"));
 });
 
+app.get("/taksit", (_req, res) => {
+  res.sendFile(path.join(root, "taksit.html"));
+});
+
 app.get("/health", (_req, res) => res.send("ok"));
 
 prepareDatabase()
