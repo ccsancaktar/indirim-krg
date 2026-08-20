@@ -32,9 +32,8 @@
       const formatter = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
       const section = window.location.pathname.split("/")[1];
       const settings = {
-        taksit: ["/api/taksit-sayac", "Taksit kataloğu ziyaret istatistikleri"],
         pesin: ["/api/pesin-sayac", "Peşin kataloğu ziyaret istatistikleri"],
-        taksitle: ["/api/taksitle-sayac", "Taksitle kataloğu ziyaret istatistikleri"],
+        pesinfiyat: ["/api/pesinfiyat-sayac", "Peşin fiyat kataloğu ziyaret istatistikleri"],
       };
       const [endpoint, description] = settings[section] || ["/api/sayac", "Katalog ziyaret istatistikleri"];
       document.querySelector("#description").textContent = description;
